@@ -68,12 +68,55 @@
             </p>
         </section>
 
-        <section class="report-section" id="report">
-            <p class="eyebrow">HELP SOMEONE FIND THEIR ITEM</p>
-            <h2>Lost something or found an item?</h2>
-            <p>Add an item to help connect it with its owner.</p>
-            <button id="createListingButton">Create a listing</button>
-        </section>
+        
+<section class="report-section" id="report">
+    <p class="eyebrow">HELP SOMEONE FIND THEIR ITEM</p>
+    <h2>Lost something or found an item?</h2>
+    <p>Add an item to help connect it with its owner.</p>
+
+    <form id="listingForm">
+        <label for="itemTitle">Item name</label>
+        <input
+            type="text"
+            id="itemTitle"
+            placeholder="e.g. Black headphones"
+            required
+        >
+
+        <label for="itemType">I have</label>
+        <select id="itemType" required>
+            <option value="Lost">Lost an item</option>
+            <option value="Found">Found an item</option>
+        </select>
+
+        <label for="itemCategory">Category</label>
+        <select id="itemCategory" required>
+            <option value="Electronics">Electronics</option>
+            <option value="Bags">Bags</option>
+            <option value="Accessories">Accessories</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <label for="itemLocation">Location</label>
+        <input
+            type="text"
+            id="itemLocation"
+            placeholder="e.g. Library"
+            required
+        >
+
+        <label for="itemDescription">Description</label>
+        <textarea
+            id="itemDescription"
+            placeholder="Describe the item..."
+            required
+        ></textarea>
+
+        <button type="submit">Publish listing</button>
+        <p id="formMessage" role="status"></p>
+    </form>
+</section>
+
     </main>
 
     <footer>
