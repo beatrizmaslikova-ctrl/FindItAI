@@ -36,7 +36,17 @@ const defaultItems = [
         date: "October 22, 2026",
         description: "Reusable white water bottle left on a table.",
         icon: "🥤"
-    }
+    },
+    {
+
+    title: "Black Headphones",
+    category: "Electronics",
+    type: "Found",
+    location: "Library",
+    date: "October 25, 2026",
+    description: "Black wireless headphones found in the library.",
+    icon: "🎧"
+},
 ];
 
 let items = JSON.parse(localStorage.getItem("findItItems")) || defaultItems;
@@ -91,7 +101,49 @@ function renderItems(itemsToShow) {
         category.textContent = item.category;
 
         details.append(location, date);
-        card.append(icon, status, title, description, details, category);
+        
+const matches = findMatches(item);
+
+const matchSection = document.createElement("div");
+matchSection.className = "match-section";
+
+if (matches.length > 0) {
+    const matchTitle = document.createElement("h4");
+    matchTitle.textContent = "Possible matches";
+    matchSection.appendChild(matchTitle);
+
+    matches.slice(0, 2).forEach(match => {
+        const matchCard = document.createElement("div");
+        matchCard.className = "match-card";
+
+        const matchName = document.createElement("strong");
+        matchName.textContent = match.item.title;
+
+        const matchInfo = document.createElement("p");
+        matchInfo.textContent =
+            `${match.item.type} · ${match.item.location}`;
+
+        const matchReason = document.createElement("small");
+        matchReason.textContent =
+            match.sharedWords.length > 0
+                ? `Similar words: ${match.sharedWords.join(", ")}`
+                : `Similar category or location`;
+
+        matchCard.append(matchName, matchInfo, matchReason);
+        matchSection.appendChild(matchCard);
+    });
+}
+
+card.append(
+    icon,
+    status,
+    title,
+    description,
+    details,
+    category,
+    matchSection
+);
+
         itemsGrid.appendChild(card);
     });
 }
@@ -163,3 +215,53 @@ listingForm.addEventListener("submit", function(event) {
 });
 
 renderItems(items);
+
+
+function findMatches(item) {
+    const oppositeType = item.type === "Lost" ? "Found" : "Lost";
+
+    const stopWords = [
+        "the", "a", "an", "in", "at", "on", "of",
+        "and", "with", "my", "is", "to", "left"
+    ];
+
+    function getWords(text) {
+        return text
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, "")
+            .split(/\s+/)
+            .filter(word =>
+                word.length > 2 && !stopWords.includes(word)
+            );
+    }
+
+    return items
+        .filter(otherItem =>
+            otherItem !== item &&
+            otherItem.type === oppositeType &&
+            otherItem.category === item.category
+        )
+        .map(otherItem => {
+            const itemWords = getWords(
+                `${item.title} ${item.description}`
+            );
+
+            const otherWords = getWords(
+                `${otherItem.title} ${otherItem.description}`
+            );
+
+            const sharedWords = [
+                ...new Set(itemWords.filter(word =>
+                    otherWords.includes(word)
+                ))
+            ];
+
+            return {
+                item: otherItem,
+                score: sharedWords.length,
+                sharedWords
+            };
+        })
+        .filter(match => match.score >= 1)
+        .sort((a, b) => b.score - a.score);
+}

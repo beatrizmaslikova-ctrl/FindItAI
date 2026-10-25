@@ -675,3 +675,42 @@ textarea:focus-visible {
         animation-duration: 0.01ms !important;
     }
 }
+
+/* Possible matching listings */
+.match-section {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+.match-section h4 {
+    margin: 0 0 10px;
+    color: var(--primary-dark);
+    font-size: 14px;
+}
+
+.match-card {
+    margin-top: 8px;
+    padding: 12px;
+    border: 1px solid #e5e1ff;
+    border-radius: 12px;
+    background: #f8f7ff;
+}
+
+.match-card strong {
+    display: block;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.match-card p {
+    margin: 5px 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.match-card small {
+    color: var(--primary-dark);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
