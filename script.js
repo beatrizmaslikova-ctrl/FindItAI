@@ -112,26 +112,49 @@ if (matches.length > 0) {
     matchTitle.textContent = "Possible matches";
     matchSection.appendChild(matchTitle);
 
-    matches.slice(0, 2).forEach(match => {
-        const matchCard = document.createElement("div");
-        matchCard.className = "match-card";
+    
+        
+        matches.slice(0, 2).forEach(match => {
+            const matchCard = document.createElement("div");
+            matchCard.className = "match-card";
 
-        const matchName = document.createElement("strong");
-        matchName.textContent = match.item.title;
+            const matchName = document.createElement("strong");
+            matchName.textContent = match.item.title;
 
-        const matchInfo = document.createElement("p");
-        matchInfo.textContent =
-            `${match.item.type} · ${match.item.location}`;
+            const matchScore = document.createElement("div");
+            matchScore.className = "match-score";
+            matchScore.textContent = `${match.score}% match`;
 
-        const matchReason = document.createElement("small");
-        matchReason.textContent =
-            match.sharedWords.length > 0
-                ? `Similar words: ${match.sharedWords.join(", ")}`
-                : `Similar category or location`;
+            const scoreBar = document.createElement("div");
+            scoreBar.className = "match-score-bar";
 
-        matchCard.append(matchName, matchInfo, matchReason);
-        matchSection.appendChild(matchCard);
-    });
+            const scoreFill = document.createElement("div");
+            scoreFill.className = "match-score-fill";
+            scoreFill.style.width = `${match.score}%`;
+
+            scoreBar.appendChild(scoreFill);
+
+            const matchInfo = document.createElement("p");
+            matchInfo.textContent =
+                `${match.item.type} · ${match.item.location}`;
+
+            const matchReason = document.createElement("small");
+            matchReason.textContent =
+                match.sharedWords.length > 0
+                    ? `Similar words: ${match.sharedWords.join(", ")}`
+                    : "Similar category or location";
+
+            matchCard.append(
+                matchName,
+                matchScore,
+                scoreBar,
+                matchInfo,
+                matchReason
+            );
+
+            matchSection.appendChild(matchCard);
+        });
+
 }
 
 card.append(
@@ -217,6 +240,7 @@ listingForm.addEventListener("submit", function(event) {
 renderItems(items);
 
 
+
 function findMatches(item) {
     const oppositeType = item.type === "Lost" ? "Found" : "Lost";
 
@@ -235,6 +259,10 @@ function findMatches(item) {
             );
     }
 
+    const itemWords = getWords(
+        `${item.title} ${item.description}`
+    );
+
     return items
         .filter(otherItem =>
             otherItem !== item &&
@@ -242,10 +270,6 @@ function findMatches(item) {
             otherItem.category === item.category
         )
         .map(otherItem => {
-            const itemWords = getWords(
-                `${item.title} ${item.description}`
-            );
-
             const otherWords = getWords(
                 `${otherItem.title} ${otherItem.description}`
             );
@@ -256,12 +280,21 @@ function findMatches(item) {
                 ))
             ];
 
+            const wordScore = Math.min(sharedWords.length / 3, 1);
+            const sameLocation =
+                item.location.trim().toLowerCase() ===
+                otherItem.location.trim().toLowerCase();
+
+            const score = Math.round(
+                (wordScore * 0.8 + (sameLocation ? 0.2 : 0)) * 100
+            );
+
             return {
                 item: otherItem,
-                score: sharedWords.length,
+                score,
                 sharedWords
             };
         })
-        .filter(match => match.score >= 1)
+        .filter(match => match.sharedWords.length > 0)
         .sort((a, b) => b.score - a.score);
 }
