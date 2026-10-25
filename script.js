@@ -241,13 +241,44 @@ renderItems(items);
 
 
 
+
 function findMatches(item) {
     const oppositeType = item.type === "Lost" ? "Found" : "Lost";
 
     const stopWords = [
         "the", "a", "an", "in", "at", "on", "of",
-        "and", "with", "my", "is", "to", "left"
+        "and", "with", "my", "is", "to", "left",
+        "found", "lost", "item", "small", "near"
     ];
+
+    const colors = [
+        "black", "white", "red", "blue", "green",
+        "yellow", "pink", "purple", "silver", "gold",
+        "grey", "gray", "brown", "orange"
+    ];
+
+    const itemTypes = {
+        phone: [
+            "phone", "smartphone", "mobile", "iphone",
+            "samsung", "cellphone"
+        ],
+        headphones: [
+            "headphones", "headphone", "headset",
+            "earphones", "earbuds", "airpods"
+        ],
+        backpack: [
+            "backpack", "rucksack"
+        ],
+        bag: [
+            "bag", "handbag", "tote"
+        ],
+        bottle: [
+            "bottle", "flask"
+        ],
+        necklace: [
+            "necklace", "pendant"
+        ]
+    };
 
     function getWords(text) {
         return text
@@ -255,13 +286,65 @@ function findMatches(item) {
             .replace(/[^a-z0-9\s]/g, "")
             .split(/\s+/)
             .filter(word =>
-                word.length > 2 && !stopWords.includes(word)
+                word.length > 2 &&
+                !stopWords.includes(word)
             );
     }
 
-    const itemWords = getWords(
-        `${item.title} ${item.description}`
-    );
+    function getItemType(item) {
+        const text =
+            `${item.title} ${item.description}`.toLowerCase();
+
+        for (const type in itemTypes) {
+            if (
+                itemTypes[type].some(word =>
+                    new RegExp(`\\b${word}\\b`, "i").test(text)
+                )
+            ) {
+                return type;
+            }
+        }
+
+        return null;
+    }
+
+    function getColor(item) {
+        const text =
+            `${item.title} ${item.description}`.toLowerCase();
+
+        return colors.find(color =>
+            new RegExp(`\\b${color}\\b`, "i").test(text)
+        ) || null;
+    }
+
+    function getMeaningfulWords(item) {
+        const words = getWords(
+            `${item.title} ${item.description}`
+        );
+
+        return words.filter(word => !colors.includes(word));
+    }
+
+    const itemType = getItemType(item);
+    const itemColor = getColor(item);
+    const itemWords = getMeaningfulWords(item);
+    const itemTitleWords = getWords(item.title);
+
+    const synonymGroups = [
+        ["headphones", "headphone", "headset", "earphones", "earbuds", "airpods"],
+        ["phone", "smartphone", "mobile", "iphone", "cellphone"],
+        ["backpack", "rucksack"],
+        ["bottle", "flask"],
+        ["necklace", "pendant"]
+    ];
+
+    function getCanonicalWord(word) {
+        const group = synonymGroups.find(words =>
+            words.includes(word)
+        );
+
+        return group ? group[0] : word;
+    }
 
     return items
         .filter(otherItem =>
@@ -270,31 +353,84 @@ function findMatches(item) {
             otherItem.category === item.category
         )
         .map(otherItem => {
-            const otherWords = getWords(
-                `${otherItem.title} ${otherItem.description}`
-            );
+            const otherType = getItemType(otherItem);
+            const otherColor = getColor(otherItem);
+            const otherWords = getMeaningfulWords(otherItem);
+            const otherTitleWords = getWords(otherItem.title);
+
+            // Do not match two known, different item types.
+            if (itemType && otherType && itemType !== otherType) {
+                return null;
+            }
 
             const sharedWords = [
-                ...new Set(itemWords.filter(word =>
-                    otherWords.includes(word)
-                ))
+                ...new Set(
+                    itemWords.filter(word =>
+                        otherWords.some(otherWord =>
+                            getCanonicalWord(word) ===
+                            getCanonicalWord(otherWord)
+                        )
+                    )
+                )
             ];
 
-            const wordScore = Math.min(sharedWords.length / 3, 1);
+            // Unknown item types need at least one meaningful word in common.
+            if (!itemType && !otherType && sharedWords.length === 0) {
+                return null;
+            }
+
+            // A known item type can also match through its synonym.
+            const sameKnownType =
+                itemType !== null &&
+                itemType === otherType;
+
+            if (!sameKnownType && sharedWords.length === 0) {
+                return null;
+            }
+
+            const sharedTitleWords = itemTitleWords.filter(word =>
+                otherTitleWords.some(otherWord =>
+                    getCanonicalWord(word) ===
+                    getCanonicalWord(otherWord)
+                )
+            );
+
             const sameLocation =
                 item.location.trim().toLowerCase() ===
                 otherItem.location.trim().toLowerCase();
 
-            const score = Math.round(
-                (wordScore * 0.8 + (sameLocation ? 0.2 : 0)) * 100
-            );
+            const differentColors =
+                itemColor &&
+                otherColor &&
+                itemColor !== otherColor;
+
+            let score = 0;
+
+            if (sameKnownType) {
+                score += 40;
+            }
+
+            score += Math.min(sharedTitleWords.length * 10, 30);
+            score += Math.min(sharedWords.length * 5, 20);
+
+            if (sameLocation) {
+                score += 10;
+            }
+
+            if (differentColors) {
+                score -= 45;
+                score = Math.min(score, 35);
+            }
+
+            score = Math.max(0, Math.min(score, 100));
 
             return {
                 item: otherItem,
                 score,
-                sharedWords
+                sharedWords,
+                differentColors: Boolean(differentColors)
             };
         })
-        .filter(match => match.sharedWords.length > 0)
+        .filter(match => match !== null && match.score > 0)
         .sort((a, b) => b.score - a.score);
 }
