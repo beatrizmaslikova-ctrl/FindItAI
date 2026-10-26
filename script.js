@@ -100,6 +100,12 @@ function renderItems(itemsToShow) {
         category.className = "item-category";
         category.textContent = item.category;
 
+        
+const color = document.createElement("span");
+color.className = "item-color";
+color.textContent = `Colour: ${item.color || "Unknown"}`;
+
+
         details.append(location, date);
         
 const matches = findMatches(item);
@@ -164,6 +170,7 @@ card.append(
     description,
     details,
     category,
+    color,
     matchSection
 );
 
@@ -202,22 +209,30 @@ categoryFilter.addEventListener("change", filterItems);
 listingForm.addEventListener("submit", function(event) {
     event.preventDefault();
 
-    const title = document.getElementById("itemTitle").value.trim();
-    const type = document.getElementById("itemType").value;
-    const category = document.getElementById("itemCategory").value;
-    const location = document.getElementById("itemLocation").value.trim();
-    const description = document.getElementById("itemDescription").value.trim();
+    
+const title = document.getElementById("itemTitle").value.trim();
+const type = document.getElementById("itemType").value;
+const category = document.getElementById("itemCategory").value;
+const location = document.getElementById("itemLocation").value.trim();
+const color = document.getElementById("itemColor").value;
+const description = document.getElementById("itemDescription").value.trim();
 
-    if (!title || !location || !description) {
+
+    if (!title || !location || !description || !color) {
         formMessage.textContent = "Please fill in all fields.";
         return;
     }
+
+    
+        
+
 
     const newItem = {
         title,
         category,
         type,
         location,
+        color,
         date: new Date().toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
@@ -237,7 +252,6 @@ listingForm.addEventListener("submit", function(event) {
     filterItems();
 });
 
-renderItems(items);
 
 
 
@@ -331,20 +345,36 @@ function findMatches(item) {
     const itemTitleWords = getWords(item.title);
 
     const synonymGroups = [
-        ["headphones", "headphone", "headset", "earphones", "earbuds", "airpods"],
+        ["headphones", "headphone", "headset", "earphones", "earbuds", "airpods" ],
         ["phone", "smartphone", "mobile", "iphone", "cellphone"],
         ["backpack", "rucksack"],
         ["bottle", "flask"],
         ["necklace", "pendant"]
     ];
 
-    function getCanonicalWord(word) {
-        const group = synonymGroups.find(words =>
-            words.includes(word)
-        );
+    
+function getCanonicalWord(word) {
+    const group = synonymGroups.find(words =>
+        words.includes(word)
+    );
 
-        return group ? group[0] : word;
+    if (group) {
+        return group[0];
     }
+
+    // Recognize short forms such as "headp" → "headphones"
+    const shortForms = {
+        headp: "headphones",
+        headph: "headphones",
+        earbud: "headphones",
+        phone: "phone",
+        backp: "backpack",
+        neckl: "necklace",
+        bott: "bottle"
+    };
+
+    return shortForms[word] || word;
+}
 
     return items
         .filter(otherItem =>
@@ -434,3 +464,4 @@ function findMatches(item) {
         .filter(match => match !== null && match.score > 0)
         .sort((a, b) => b.score - a.score);
 }
+renderItems(items);

@@ -737,3 +737,14 @@ textarea:focus-visible {
     background: var(--primary);
     transition: width 0.3s ease;
 }
+
+.item-color {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: #f0edff;
+    color: #6558e8;
+    font-size: 13px;
+    font-weight: 500;
+}

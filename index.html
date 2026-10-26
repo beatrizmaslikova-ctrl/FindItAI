@@ -74,7 +74,7 @@
     <h2>Lost something or found an item?</h2>
     <p>Add an item to help connect it with its owner.</p>
 
-    <form id="listingForm">
+     <form id="listingForm">
         <label for="itemTitle">Item name</label>
         <input
             type="text"
@@ -82,6 +82,27 @@
             placeholder="e.g. Black headphones"
             required
         >
+        
+<label for="itemColor">Colour</label>
+<select id="itemColor" name="color" required>
+    <option value="">Select a colour</option>
+    <option value="Black">Black</option>
+    <option value="White">White</option>
+    <option value="Grey">Grey</option>
+    <option value="Brown">Brown</option>
+    <option value="Red">Red</option>
+    <option value="Pink">Pink</option>
+    <option value="Purple">Purple</option>
+    <option value="Blue">Blue</option>
+    <option value="Green">Green</option>
+    <option value="Yellow">Yellow</option>
+    <option value="Orange">Orange</option>
+    <option value="Gold">Gold</option>
+    <option value="Silver">Silver</option>
+    <option value="Multicoloured">Multicoloured</option>
+    <option value="Unknown">Unknown</option>
+</select>
+
 
         <label for="itemType">I have</label>
         <select id="itemType" required>
