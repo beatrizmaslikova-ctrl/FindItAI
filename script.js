@@ -1,5 +1,4 @@
 
-
 const defaultItems = [
     {
         title: "Wireless Headphones",
@@ -8,6 +7,7 @@ const defaultItems = [
         location: "Library",
         date: "October 20, 2026",
         description: "Black wireless headphones in a small case.",
+        color: "Black",
         icon: "🎧"
     },
     {
@@ -17,6 +17,7 @@ const defaultItems = [
         location: "Student Lounge",
         date: "October 21, 2026",
         description: "Blue backpack with notebooks inside.",
+        color: "Blue",
         icon: "🎒"
     },
     {
@@ -26,6 +27,7 @@ const defaultItems = [
         location: "Cafeteria",
         date: "October 19, 2026",
         description: "A small silver necklace with a heart pendant.",
+        color: "Silver",
         icon: "📿"
     },
     {
@@ -35,20 +37,22 @@ const defaultItems = [
         location: "Main Building",
         date: "October 22, 2026",
         description: "Reusable white water bottle left on a table.",
+        color: "White",
         icon: "🥤"
     },
     {
-
-    title: "Black Headphones",
-    category: "Electronics",
-    type: "Found",
-    location: "Library",
-    date: "October 25, 2026",
-    description: "Black wireless headphones found in the library.",
-    icon: "🎧"
-},
+        title: "Black Headphones",
+        category: "Electronics",
+        type: "Found",
+        location: "Library",
+        date: "October 25, 2026",
+        description: "Black wireless headphones found in the library.",
+        color: "Black",
+        icon: "🎧"
+    }
 ];
 
+// Load saved listings or use default examples
 let items = JSON.parse(localStorage.getItem("findItItems")) || defaultItems;
 
 const itemsGrid = document.getElementById("itemsGrid");
@@ -58,6 +62,9 @@ const categoryFilter = document.getElementById("categoryFilter");
 const emptyMessage = document.getElementById("emptyMessage");
 const listingForm = document.getElementById("listingForm");
 const formMessage = document.getElementById("formMessage");
+
+
+// DISPLAY LISTINGS
 
 function renderItems(itemsToShow) {
     itemsGrid.innerHTML = "";
@@ -75,7 +82,7 @@ function renderItems(itemsToShow) {
 
         const icon = document.createElement("div");
         icon.className = "item-icon";
-        icon.textContent = item.icon;
+        icon.textContent = item.icon || "📦";
 
         const status = document.createElement("span");
         status.className = `item-status ${item.type.toLowerCase()}`;
@@ -100,83 +107,82 @@ function renderItems(itemsToShow) {
         category.className = "item-category";
         category.textContent = item.category;
 
-        
-const color = document.createElement("span");
-color.className = "item-color";
-color.textContent = `Colour: ${item.color || "Unknown"}`;
-
+        const color = document.createElement("span");
+        color.className = "item-color";
+        color.textContent = `Colour: ${item.color || "Unknown"}`;
 
         details.append(location, date);
-        
-const matches = findMatches(item);
 
-const matchSection = document.createElement("div");
-matchSection.className = "match-section";
+        // Find possible matches
+        const matches = findMatches(item);
 
-if (matches.length > 0) {
-    const matchTitle = document.createElement("h4");
-    matchTitle.textContent = "Possible matches";
-    matchSection.appendChild(matchTitle);
+        const matchSection = document.createElement("div");
+        matchSection.className = "match-section";
 
-    
-        
-        matches.slice(0, 2).forEach(match => {
-            const matchCard = document.createElement("div");
-            matchCard.className = "match-card";
+        if (matches.length > 0) {
+            const matchTitle = document.createElement("h4");
+            matchTitle.textContent = "Possible matches";
+            matchSection.appendChild(matchTitle);
 
-            const matchName = document.createElement("strong");
-            matchName.textContent = match.item.title;
+            matches.slice(0, 2).forEach(match => {
+                const matchCard = document.createElement("div");
+                matchCard.className = "match-card";
 
-            const matchScore = document.createElement("div");
-            matchScore.className = "match-score";
-            matchScore.textContent = `${match.score}% match`;
+                const matchName = document.createElement("strong");
+                matchName.textContent = match.item.title;
 
-            const scoreBar = document.createElement("div");
-            scoreBar.className = "match-score-bar";
+                const matchScore = document.createElement("div");
+                matchScore.className = "match-score";
+                matchScore.textContent = `${match.score}% match`;
 
-            const scoreFill = document.createElement("div");
-            scoreFill.className = "match-score-fill";
-            scoreFill.style.width = `${match.score}%`;
+                const scoreBar = document.createElement("div");
+                scoreBar.className = "match-score-bar";
 
-            scoreBar.appendChild(scoreFill);
+                const scoreFill = document.createElement("div");
+                scoreFill.className = "match-score-fill";
+                scoreFill.style.width = `${match.score}%`;
 
-            const matchInfo = document.createElement("p");
-            matchInfo.textContent =
-                `${match.item.type} · ${match.item.location}`;
+                scoreBar.appendChild(scoreFill);
 
-            const matchReason = document.createElement("small");
-            matchReason.textContent =
-                match.sharedWords.length > 0
-                    ? `Similar words: ${match.sharedWords.join(", ")}`
-                    : "Similar category or location";
+                const matchInfo = document.createElement("p");
+                matchInfo.textContent =
+                    `${match.item.type} · ${match.item.location}`;
 
-            matchCard.append(
-                matchName,
-                matchScore,
-                scoreBar,
-                matchInfo,
-                matchReason
-            );
+                const matchReason = document.createElement("small");
+                matchReason.textContent =
+                    match.sharedWords.length > 0
+                        ? `Similar words: ${match.sharedWords.join(", ")}`
+                        : "Same item type or category";
 
-            matchSection.appendChild(matchCard);
-        });
+                matchCard.append(
+                    matchName,
+                    matchScore,
+                    scoreBar,
+                    matchInfo,
+                    matchReason
+                );
 
-}
+                matchSection.appendChild(matchCard);
+            });
+        }
 
-card.append(
-    icon,
-    status,
-    title,
-    description,
-    details,
-    category,
-    color,
-    matchSection
-);
+        card.append(
+            icon,
+            status,
+            title,
+            description,
+            details,
+            category,
+            color,
+            matchSection
+        );
 
         itemsGrid.appendChild(card);
     });
 }
+
+
+// SEARCH AND FILTER
 
 function filterItems() {
     const searchTerm = searchInput.value.toLowerCase().trim();
@@ -188,10 +194,12 @@ function filterItems() {
             item.description,
             item.location,
             item.category,
-            item.type
+            item.type,
+            item.color
         ].join(" ").toLowerCase();
 
         const matchesSearch = searchableText.includes(searchTerm);
+
         const matchesCategory =
             selectedCategory === "all" ||
             item.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -206,26 +214,23 @@ searchButton.addEventListener("click", filterItems);
 searchInput.addEventListener("input", filterItems);
 categoryFilter.addEventListener("change", filterItems);
 
+
+// CREATE NEW LISTING
+
 listingForm.addEventListener("submit", function(event) {
     event.preventDefault();
 
-    
-const title = document.getElementById("itemTitle").value.trim();
-const type = document.getElementById("itemType").value;
-const category = document.getElementById("itemCategory").value;
-const location = document.getElementById("itemLocation").value.trim();
-const color = document.getElementById("itemColor").value;
-const description = document.getElementById("itemDescription").value.trim();
-
+    const title = document.getElementById("itemTitle").value.trim();
+    const type = document.getElementById("itemType").value;
+    const category = document.getElementById("itemCategory").value;
+    const location = document.getElementById("itemLocation").value.trim();
+    const color = document.getElementById("itemColor").value;
+    const description = document.getElementById("itemDescription").value.trim();
 
     if (!title || !location || !description || !color) {
         formMessage.textContent = "Please fill in all fields.";
         return;
     }
-
-    
-        
-
 
     const newItem = {
         title,
@@ -245,16 +250,18 @@ const description = document.getElementById("itemDescription").value.trim();
     };
 
     items.unshift(newItem);
+
     localStorage.setItem("findItItems", JSON.stringify(items));
 
     listingForm.reset();
+
     formMessage.textContent = "Your listing has been published!";
+
     filterItems();
 });
 
 
-
-
+// AI MATCHING ALGORITHM
 
 function findMatches(item) {
     const oppositeType = item.type === "Lost" ? "Found" : "Lost";
@@ -273,26 +280,41 @@ function findMatches(item) {
 
     const itemTypes = {
         phone: [
-            "phone", "smartphone", "mobile", "iphone",
-            "samsung", "cellphone"
+            "phone", "smartphone", "mobile",
+            "iphone", "samsung", "cellphone"
         ],
         headphones: [
             "headphones", "headphone", "headset",
-            "earphones", "earbuds", "airpods"
+            "headp", "headph", "earphones",
+            "earbud", "earbuds", "airpods"
         ],
         backpack: [
-            "backpack", "rucksack"
+            "backpack", "rucksack", "backp"
         ],
         bag: [
             "bag", "handbag", "tote"
         ],
         bottle: [
-            "bottle", "flask"
+            "bottle", "flask", "bott"
         ],
         necklace: [
-            "necklace", "pendant"
+            "necklace", "pendant", "neckl"
+        ],
+        earring: [
+            "earring", "earrings", "earing",
+            "earings", "stud", "studs", "hoop", "hoops"
         ]
     };
+
+    const synonymGroups = [
+        ["headphones", "headphone", "headset", "headp", "headph", "earphones", "earbud", "earbuds", "airpods"],
+        ["phone", "smartphone", "mobile", "iphone", "cellphone"],
+        ["backpack", "rucksack", "backp"],
+        ["bag", "handbag", "tote"],
+        ["bottle", "flask", "bott"],
+        ["necklace", "pendant", "neckl"],
+        ["earring", "earrings", "earing", "earings", "stud", "studs", "hoop", "hoops"]
+    ];
 
     function getWords(text) {
         return text
@@ -300,14 +322,13 @@ function findMatches(item) {
             .replace(/[^a-z0-9\s]/g, "")
             .split(/\s+/)
             .filter(word =>
-                word.length > 2 &&
-                !stopWords.includes(word)
+                word.length > 2 && !stopWords.includes(word)
             );
     }
 
-    function getItemType(item) {
+    function getItemType(currentItem) {
         const text =
-            `${item.title} ${item.description}`.toLowerCase();
+            `${currentItem.title} ${currentItem.description}`.toLowerCase();
 
         for (const type in itemTypes) {
             if (
@@ -322,59 +343,56 @@ function findMatches(item) {
         return null;
     }
 
-    function getColor(item) {
+    function getColor(currentItem) {
+        if (
+            currentItem.color &&
+            currentItem.color !== "Unknown"
+        ) {
+            return currentItem.color.toLowerCase();
+        }
+
         const text =
-            `${item.title} ${item.description}`.toLowerCase();
+            `${currentItem.title} ${currentItem.description}`.toLowerCase();
 
         return colors.find(color =>
             new RegExp(`\\b${color}\\b`, "i").test(text)
         ) || null;
     }
 
-    function getMeaningfulWords(item) {
+    function getMeaningfulWords(currentItem) {
         const words = getWords(
-            `${item.title} ${item.description}`
+            `${currentItem.title} ${currentItem.description}`
         );
 
         return words.filter(word => !colors.includes(word));
+    }
+
+    function getCanonicalWord(word) {
+        const group = synonymGroups.find(words =>
+            words.includes(word)
+        );
+
+        if (group) {
+            return group[0];
+        }
+
+        const shortForms = {
+            headp: "headphones",
+            headph: "headphones",
+            earbud: "headphones",
+            phone: "phone",
+            backp: "backpack",
+            neckl: "necklace",
+            bott: "bottle"
+        };
+
+        return shortForms[word] || word;
     }
 
     const itemType = getItemType(item);
     const itemColor = getColor(item);
     const itemWords = getMeaningfulWords(item);
     const itemTitleWords = getWords(item.title);
-
-    const synonymGroups = [
-        ["headphones", "headphone", "headset", "earphones", "earbuds", "airpods" ],
-        ["phone", "smartphone", "mobile", "iphone", "cellphone"],
-        ["backpack", "rucksack"],
-        ["bottle", "flask"],
-        ["necklace", "pendant"]
-    ];
-
-    
-function getCanonicalWord(word) {
-    const group = synonymGroups.find(words =>
-        words.includes(word)
-    );
-
-    if (group) {
-        return group[0];
-    }
-
-    // Recognize short forms such as "headp" → "headphones"
-    const shortForms = {
-        headp: "headphones",
-        headph: "headphones",
-        earbud: "headphones",
-        phone: "phone",
-        backp: "backpack",
-        neckl: "necklace",
-        bott: "bottle"
-    };
-
-    return shortForms[word] || word;
-}
 
     return items
         .filter(otherItem =>
@@ -388,8 +406,12 @@ function getCanonicalWord(word) {
             const otherWords = getMeaningfulWords(otherItem);
             const otherTitleWords = getWords(otherItem.title);
 
-            // Do not match two known, different item types.
-            if (itemType && otherType && itemType !== otherType) {
+            // Reject clearly different known item types
+            if (
+                itemType &&
+                otherType &&
+                itemType !== otherType
+            ) {
                 return null;
             }
 
@@ -404,12 +426,11 @@ function getCanonicalWord(word) {
                 )
             ];
 
-            // Unknown item types need at least one meaningful word in common.
+            // Require meaningful similarities
             if (!itemType && !otherType && sharedWords.length === 0) {
                 return null;
             }
 
-            // A known item type can also match through its synonym.
             const sameKnownType =
                 itemType !== null &&
                 itemType === otherType;
@@ -434,22 +455,31 @@ function getCanonicalWord(word) {
                 otherColor &&
                 itemColor !== otherColor;
 
+            const sameColor =
+                itemColor &&
+                otherColor &&
+                itemColor === otherColor;
+
+            // Calculate matching score
             let score = 0;
 
             if (sameKnownType) {
                 score += 40;
             }
 
-            score += Math.min(sharedTitleWords.length * 10, 30);
-            score += Math.min(sharedWords.length * 5, 20);
+            score += Math.min(sharedTitleWords.length * 15, 30);
+            score += Math.min(sharedWords.length * 5, 15);
+
+            if (sameColor) {
+                score += 25;
+            }
 
             if (sameLocation) {
                 score += 10;
             }
 
             if (differentColors) {
-                score -= 45;
-                score = Math.min(score, 35);
+                score -= 30;
             }
 
             score = Math.max(0, Math.min(score, 100));
@@ -464,4 +494,8 @@ function getCanonicalWord(word) {
         .filter(match => match !== null && match.score > 0)
         .sort((a, b) => b.score - a.score);
 }
+
+
+// DISPLAY LISTINGS WHEN PAGE LOADS
+
 renderItems(items);
