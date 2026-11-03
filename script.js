@@ -52,16 +52,120 @@ const defaultItems = [
     }
 ];
 
-// Load saved listings or use default examples
-let items = JSON.parse(localStorage.getItem("findItItems")) || defaultItems;
+// LOAD SAVED LISTINGS
+
+let items;
+
+try {
+    const savedItems = localStorage.getItem("findItItems");
+    items = savedItems ? JSON.parse(savedItems) : defaultItems;
+} catch (error) {
+    items = defaultItems;
+}
 
 const itemsGrid = document.getElementById("itemsGrid");
 const searchInput = document.getElementById("searchInput");
 const searchButton = document.getElementById("searchButton");
 const categoryFilter = document.getElementById("categoryFilter");
 const emptyMessage = document.getElementById("emptyMessage");
+
 const listingForm = document.getElementById("listingForm");
 const formMessage = document.getElementById("formMessage");
+
+const itemImage = document.getElementById("itemImage");
+const imagePreview = document.getElementById("imagePreview");
+const imagePreviewContainer = document.getElementById("imagePreviewContainer");
+
+
+// IMAGE COMPRESSION
+
+function compressImage(file) {
+    return new Promise((resolve, reject) => {
+        if (!file) {
+            resolve("");
+            return;
+        }
+
+        if (!file.type.startsWith("image/")) {
+            reject(new Error("Please select an image."));
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            reject(new Error("Image must be smaller than 5 MB."));
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+            const image = new Image();
+
+            image.onload = function () {
+                const canvas = document.createElement("canvas");
+                const maxSize = 900;
+
+                let width = image.width;
+                let height = image.height;
+
+                if (width > maxSize || height > maxSize) {
+                    const ratio = Math.min(
+                        maxSize / width,
+                        maxSize / height
+                    );
+
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const context = canvas.getContext("2d");
+
+                context.drawImage(image, 0, 0, width, height);
+
+                resolve(canvas.toDataURL("image/jpeg", 0.75));
+            };
+
+            image.onerror = () => reject(
+                new Error("Could not read this image.")
+            );
+
+            image.src = event.target.result;
+        };
+
+        reader.onerror = () => reject(
+            new Error("Could not upload this image.")
+        );
+
+        reader.readAsDataURL(file);
+    });
+}
+
+
+// IMAGE PREVIEW
+
+itemImage.addEventListener("change", async function () {
+    const file = itemImage.files[0];
+
+    if (!file) {
+        imagePreview.src = "";
+        imagePreviewContainer.style.display = "none";
+        return;
+    }
+
+    try {
+        const compressedImage = await compressImage(file);
+
+        imagePreview.src = compressedImage;
+        imagePreviewContainer.style.display = "block";
+    } catch (error) {
+        formMessage.textContent = error.message;
+        itemImage.value = "";
+        imagePreviewContainer.style.display = "none";
+    }
+});
 
 
 // DISPLAY LISTINGS
@@ -80,9 +184,19 @@ function renderItems(itemsToShow) {
         const card = document.createElement("article");
         card.className = "item-card";
 
-        const icon = document.createElement("div");
-        icon.className = "item-icon";
-        icon.textContent = item.icon || "📦";
+        // Show uploaded photo or default icon
+        if (item.image) {
+            const photo = document.createElement("img");
+            photo.className = "item-photo";
+            photo.src = item.image;
+            photo.alt = item.title;
+            card.appendChild(photo);
+        } else {
+            const icon = document.createElement("div");
+            icon.className = "item-icon";
+            icon.textContent = item.icon || "📦";
+            card.appendChild(icon);
+        }
 
         const status = document.createElement("span");
         status.className = `item-status ${item.type.toLowerCase()}`;
@@ -103,6 +217,8 @@ function renderItems(itemsToShow) {
         const date = document.createElement("span");
         date.textContent = `📅 ${item.date}`;
 
+        details.append(location, date);
+
         const category = document.createElement("span");
         category.className = "item-category";
         category.textContent = item.category;
@@ -111,9 +227,8 @@ function renderItems(itemsToShow) {
         color.className = "item-color";
         color.textContent = `Colour: ${item.color || "Unknown"}`;
 
-        details.append(location, date);
+        // POSSIBLE MATCHES
 
-        // Find possible matches
         const matches = findMatches(item);
 
         const matchSection = document.createElement("div");
@@ -122,6 +237,7 @@ function renderItems(itemsToShow) {
         if (matches.length > 0) {
             const matchTitle = document.createElement("h4");
             matchTitle.textContent = "Possible matches";
+
             matchSection.appendChild(matchTitle);
 
             matches.slice(0, 2).forEach(match => {
@@ -149,9 +265,9 @@ function renderItems(itemsToShow) {
                     `${match.item.type} · ${match.item.location}`;
 
                 const matchReason = document.createElement("small");
-matchReason.textContent = match.reasons.length > 0
-    ? `Why it matches: ${match.reasons.join(" · ")}`
-    : "Some details are similar";
+                matchReason.textContent = match.reasons.length > 0
+                    ? `Why it matches: ${match.reasons.join(" · ")}`
+                    : "Some details are similar";
 
                 matchCard.append(
                     matchName,
@@ -166,7 +282,6 @@ matchReason.textContent = match.reasons.length > 0
         }
 
         card.append(
-            icon,
             status,
             title,
             description,
@@ -216,7 +331,7 @@ categoryFilter.addEventListener("change", filterItems);
 
 // CREATE NEW LISTING
 
-listingForm.addEventListener("submit", function(event) {
+listingForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
     const title = document.getElementById("itemTitle").value.trim();
@@ -227,41 +342,76 @@ listingForm.addEventListener("submit", function(event) {
     const description = document.getElementById("itemDescription").value.trim();
 
     if (!title || !location || !description || !color) {
-        formMessage.textContent = "Please fill in all fields.";
+        formMessage.textContent = "Please fill in all required fields.";
         return;
     }
 
-    const newItem = {
-        title,
-        category,
-        type,
-        location,
-        color,
-        date: new Date().toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric"
-        }),
-        description,
-        icon: category === "Electronics" ? "🎧" :
-              category === "Bags" ? "🎒" :
-              category === "Accessories" ? "👜" : "📦"
-    };
+    const submitButton = listingForm.querySelector('button[type="submit"]');
 
-    items.unshift(newItem);
+    submitButton.disabled = true;
+    submitButton.textContent = "Publishing...";
 
-    localStorage.setItem("findItItems", JSON.stringify(items));
+    try {
+        const file = itemImage.files[0];
+        const image = file ? await compressImage(file) : "";
 
-    listingForm.reset();
+        const newItem = {
+            title,
+            category,
+            type,
+            location,
+            color,
+            date: new Date().toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric"
+            }),
+            description,
+            image,
+            icon: category === "Electronics" ? "🎧" :
+                  category === "Bags" ? "🎒" :
+                  category === "Accessories" ? "👜" : "📦"
+        };
 
-    formMessage.textContent = "Your listing has been published!";
+        const updatedItems = [newItem, ...items];
 
-    filterItems();
+        // Save listings and photos
+        localStorage.setItem(
+            "findItItems",
+            JSON.stringify(updatedItems)
+        );
+
+        items = updatedItems;
+
+        // Clear the complete form
+        listingForm.reset();
+
+        imagePreview.src = "";
+        imagePreviewContainer.style.display = "none";
+
+        formMessage.textContent = "Your listing has been published!";
+
+        filterItems();
+
+        // Scroll to the new listing
+        document.getElementById("items").scrollIntoView({
+            behavior: "smooth"
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        formMessage.textContent =
+            "Could not save the listing. Try a smaller photo.";
+
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Publish listing";
+    }
 });
 
 
 // AI MATCHING ALGORITHM
-
 
 function findMatches(item) {
     const oppositeType = item.type === "Lost" ? "Found" : "Lost";

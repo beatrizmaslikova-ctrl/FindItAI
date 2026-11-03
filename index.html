@@ -126,12 +126,35 @@
             required
         >
 
-        <label for="itemDescription">Description</label>
+        
         <textarea
             id="itemDescription"
             placeholder="Describe the item..."
             required
         ></textarea>
+
+        
+
+<label for="itemImage" class="upload-area">
+    <span class="upload-icon">📷</span>
+    <strong>Upload an item photo</strong>
+    <span>Click to choose an image from your device</span>
+    <span class="upload-button">Choose photo</span>
+    <small>PNG, JPG or JPEG · Max 5 MB</small>
+</label>
+
+<input
+    type="file"
+    id="itemImage"
+    accept="image/*"
+    hidden
+>
+        <div id="imagePreviewContainer">
+            <img id="imagePreview" alt="Selected item preview">
+        </div>
+
+        
+
 
         <button type="submit">Publish listing</button>
         <p id="formMessage" role="status"></p>
