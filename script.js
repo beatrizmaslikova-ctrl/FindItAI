@@ -52,16 +52,28 @@ const defaultItems = [
     }
 ];
 
+
 // LOAD SAVED LISTINGS
 
 let items;
 
 try {
     const savedItems = localStorage.getItem("findItItems");
-    items = savedItems ? JSON.parse(savedItems) : defaultItems;
+
+    items = savedItems
+        ? JSON.parse(savedItems).map(item => ({
+            ...item,
+            isUserCreated: item.isUserCreated ?? true
+        }))
+        : defaultItems;
+
 } catch (error) {
+    console.error("Could not load saved listings:", error);
     items = defaultItems;
 }
+
+
+// HTML ELEMENTS
 
 const itemsGrid = document.getElementById("itemsGrid");
 const searchInput = document.getElementById("searchInput");
@@ -75,6 +87,8 @@ const formMessage = document.getElementById("formMessage");
 const itemImage = document.getElementById("itemImage");
 const imagePreview = document.getElementById("imagePreview");
 const imagePreviewContainer = document.getElementById("imagePreviewContainer");
+
+let editingItem = null;
 
 
 // IMAGE COMPRESSION
@@ -98,10 +112,10 @@ function compressImage(file) {
 
         const reader = new FileReader();
 
-        reader.onload = function (event) {
+        reader.onload = function(event) {
             const image = new Image();
 
-            image.onload = function () {
+            image.onload = function() {
                 const canvas = document.createElement("canvas");
                 const maxSize = 900;
 
@@ -146,7 +160,7 @@ function compressImage(file) {
 
 // IMAGE PREVIEW
 
-itemImage.addEventListener("change", async function () {
+itemImage.addEventListener("change", async function() {
     const file = itemImage.files[0];
 
     if (!file) {
@@ -160,6 +174,8 @@ itemImage.addEventListener("change", async function () {
 
         imagePreview.src = compressedImage;
         imagePreviewContainer.style.display = "block";
+        formMessage.textContent = "";
+
     } catch (error) {
         formMessage.textContent = error.message;
         itemImage.value = "";
@@ -184,19 +200,24 @@ function renderItems(itemsToShow) {
         const card = document.createElement("article");
         card.className = "item-card";
 
-        // Show uploaded photo or default icon
+        // PHOTO OR DEFAULT ICON
+
         if (item.image) {
             const photo = document.createElement("img");
             photo.className = "item-photo";
             photo.src = item.image;
             photo.alt = item.title;
+
             card.appendChild(photo);
         } else {
             const icon = document.createElement("div");
             icon.className = "item-icon";
             icon.textContent = item.icon || "📦";
+
             card.appendChild(icon);
         }
+
+        // ITEM INFORMATION
 
         const status = document.createElement("span");
         status.className = `item-status ${item.type.toLowerCase()}`;
@@ -226,6 +247,7 @@ function renderItems(itemsToShow) {
         const color = document.createElement("span");
         color.className = "item-color";
         color.textContent = `Colour: ${item.color || "Unknown"}`;
+
 
         // POSSIBLE MATCHES
 
@@ -281,15 +303,53 @@ function renderItems(itemsToShow) {
             });
         }
 
-        card.append(
-            status,
-            title,
-            description,
-            details,
-            category,
-            color,
-            matchSection
-        );
+
+        // EDIT AND DELETE BUTTONS
+
+        if (true) {
+            const actions = document.createElement("div");
+            actions.className = "item-actions";
+
+            const editButton = document.createElement("button");
+            editButton.textContent = "Edit";
+            editButton.className = "edit-button";
+
+            editButton.addEventListener("click", function() {
+                editItem(item);
+            });
+
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "Delete";
+            deleteButton.className = "delete-button";
+
+            deleteButton.addEventListener("click", function() {
+                deleteItem(item);
+            });
+
+            actions.append(editButton, deleteButton);
+
+            card.append(
+                status,
+                title,
+                description,
+                details,
+                category,
+                color,
+                matchSection,
+                actions
+            );
+
+        } else {
+            card.append(
+                status,
+                title,
+                description,
+                details,
+                category,
+                color,
+                matchSection
+            );
+        }
 
         itemsGrid.appendChild(card);
     });
@@ -329,7 +389,7 @@ searchInput.addEventListener("input", filterItems);
 categoryFilter.addEventListener("change", filterItems);
 
 
-// CREATE NEW LISTING
+// CREATE AND UPDATE LISTINGS
 
 listingForm.addEventListener("submit", async function(event) {
     event.preventDefault();
@@ -348,52 +408,75 @@ listingForm.addEventListener("submit", async function(event) {
 
     const submitButton = listingForm.querySelector('button[type="submit"]');
 
+    const wasEditing = Boolean(editingItem);
+
     submitButton.disabled = true;
-    submitButton.textContent = "Publishing...";
+    submitButton.textContent = "Saving...";
 
     try {
         const file = itemImage.files[0];
-        const image = file ? await compressImage(file) : "";
+
+        const image = file
+            ? await compressImage(file)
+            : (editingItem ? editingItem.image || "" : "");
 
         const newItem = {
+            isUserCreated: true,
             title,
             category,
             type,
             location,
             color,
-            date: new Date().toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric"
-            }),
+
+            date: editingItem
+                ? editingItem.date
+                : new Date().toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric"
+                }),
+
             description,
             image,
+
             icon: category === "Electronics" ? "🎧" :
                   category === "Bags" ? "🎒" :
                   category === "Accessories" ? "👜" : "📦"
         };
 
-        const updatedItems = [newItem, ...items];
+        let updatedItems;
 
-        // Save listings and photos
+        if (editingItem) {
+            updatedItems = items.map(existingItem =>
+                existingItem === editingItem ? newItem : existingItem
+            );
+        } else {
+            updatedItems = [newItem, ...items];
+        }
+
         localStorage.setItem(
             "findItItems",
             JSON.stringify(updatedItems)
         );
 
         items = updatedItems;
+        editingItem = null;
 
-        // Clear the complete form
+        // CLEAR FORM
+
         listingForm.reset();
 
         imagePreview.src = "";
         imagePreviewContainer.style.display = "none";
 
-        formMessage.textContent = "Your listing has been published!";
+        formMessage.textContent = wasEditing
+            ? "Your listing has been updated!"
+            : "Your listing has been published!";
+
+        submitButton.textContent = "Publish listing";
 
         filterItems();
 
-        // Scroll to the new listing
         document.getElementById("items").scrollIntoView({
             behavior: "smooth"
         });
@@ -409,6 +492,73 @@ listingForm.addEventListener("submit", async function(event) {
         submitButton.textContent = "Publish listing";
     }
 });
+
+
+// EDIT LISTING
+
+function editItem(item) {
+    editingItem = item;
+
+    document.getElementById("itemTitle").value = item.title;
+    document.getElementById("itemType").value = item.type;
+    document.getElementById("itemCategory").value = item.category;
+    document.getElementById("itemLocation").value = item.location;
+    document.getElementById("itemColor").value = item.color || "Unknown";
+    document.getElementById("itemDescription").value = item.description;
+
+    if (item.image) {
+        imagePreview.src = item.image;
+        imagePreviewContainer.style.display = "block";
+    } else {
+        imagePreview.src = "";
+        imagePreviewContainer.style.display = "none";
+    }
+
+    formMessage.textContent =
+        "Editing your listing. Make your changes below.";
+
+    const submitButton = listingForm.querySelector('button[type="submit"]');
+    submitButton.textContent = "Save changes";
+
+    document.getElementById("report").scrollIntoView({
+        behavior: "smooth"
+    });
+}
+
+
+// DELETE LISTING
+
+function deleteItem(item) {
+    const confirmed = confirm(
+        `Are you sure you want to delete "${item.title}"?`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    items = items.filter(existingItem => existingItem !== item);
+
+    localStorage.setItem(
+        "findItItems",
+        JSON.stringify(items)
+    );
+
+    if (editingItem === item) {
+        editingItem = null;
+        listingForm.reset();
+
+        imagePreview.src = "";
+        imagePreviewContainer.style.display = "none";
+
+        const submitButton = listingForm.querySelector('button[type="submit"]');
+        submitButton.textContent = "Publish listing";
+
+        formMessage.textContent = "";
+    }
+
+    filterItems();
+}
 
 
 // AI MATCHING ALGORITHM
@@ -477,8 +627,10 @@ function findMatches(item) {
     }
 
     function getColor(currentItem) {
-        if (currentItem.color &&
-            currentItem.color.toLowerCase() !== "unknown") {
+        if (
+            currentItem.color &&
+            currentItem.color.toLowerCase() !== "unknown"
+        ) {
             return normalize(currentItem.color);
         }
 
@@ -598,3 +750,13 @@ function findMatches(item) {
 // DISPLAY LISTINGS WHEN PAGE LOADS
 
 renderItems(items);
+// NAVIGATION: REPORT ITEM BUTTON
+
+const addReportButton = document.getElementById("reportButton");
+
+addReportButton.addEventListener("click", function() {
+    document.getElementById("report").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+});

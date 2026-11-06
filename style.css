@@ -223,7 +223,7 @@ button {
 /* Future item cards */
 
 .item-card {
-    overflow: hidden;
+    overflow: visible;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -886,3 +886,58 @@ textarea:focus-visible {
 #itemImage {
     display: none !important;
 }
+
+/* EDIT AND DELETE BUTTONS */
+
+.item-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #eeeef5;
+}
+
+.item-actions button {
+    flex: 1;
+    min-height: 40px;
+    padding: 9px 16px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, 
+                transform 0.2s ease, 
+                border-color 0.2s ease;
+}
+
+.edit-button {
+    background: #f0edff;
+    color: #6558e8;
+    border-color: #e4dfff !important;
+}
+
+.edit-button:hover {
+    background: #e5e0ff;
+    border-color: #d5ccff !important;
+    transform: translateY(-1px);
+}
+
+.delete-button {
+    background: #fff1f1;
+    color: #d65353;
+    border-color: #ffe1e1 !important;
+}
+
+.delete-button:hover {
+    background: #ffe5e5;
+    border-color: #ffd0d0 !important;
+    transform: translateY(-1px);
+}
+
+.item-actions button:active {
+    transform: scale(0.98);
+}
+
